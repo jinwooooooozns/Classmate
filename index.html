@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>홈</title>
+    <!-- Firebase 설정을 위한 CDN 추가 (8.x 버전) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://use.fontawesome.com/releases/v6.5.2/js/all.js"></script>
+    <link rel="icon" href="logoimg/a-modern-and-youthful-logo-for-a-high-school-commu-VfS-HMzMRkeGkv-5E1snuQ-j7BqbbixQGqppNp5Yh3Acw.jpeg"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            align-items: center;
+        }
+
+        nav {
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+        }
+
+        #logo_text {
+            display: flex;
+            align-items: center;
+        }
+
+        nav img {
+            width: 150px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            margin-left: 20px; /* Adjust this as needed for spacing */
+        }
+
+        nav a {
+            color: #333;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+
+        .user-menu {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-menu button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-menu button i {
+            margin-left: 5px;
+        }
+
+        .user-menu-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .user-menu-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .user-menu-content a:hover {
+            background-color: #ddd;
+        }
+
+        .user-menu:hover .user-menu-content {
+            display: block;
+        }
+
+        #userInfo {
+            background-color: #3775d8;
+            border-radius: 12px;
+            padding: 20px;
+            width: 500px;
+            height: 60px;
+            max-width: 600px;
+            margin: 40px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+        }
+
+        #userInfo div {
+            flex-grow: 1;
+        }
+
+        #userInfo p {
+            margin: 5px 0;
+        }
+
+        #editButton {
+            position: relative;
+            display: flex;
+            text-align: right;
+            cursor: pointer;
+            padding-left: 100px;
+        }
+
+        #editButton span {
+            margin-left: 100px;
+        }
+
+        #editModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        #editModalContent {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            width: 400px;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #saveButton, #cancelButton {
+            display: inline-block;
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #cancelButton {
+            background-color: #6c757d;
+        }
+
+        #saveButton:hover {
+            background-color: #0056b3;
+        }
+
+        #cancelButton:hover {
+            background-color: #5a6268;
+        }
+    </style>
+    <style>
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            padding-left: 20%;
+            width: 100%;
+            max-width: 900px;
+        }
+        .calendar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .calendar-header button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .calendar-header button:hover {
+            background-color: #0056b3;
+        }
+        .calendar table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .calendar th, .calendar td {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            vertical-align: middle;
+            position: relative;
+        }
+        .calendar th {
+            color: #555;
+        }
+        .calendar td {
+            cursor: pointer;
+        }
+        .calendar .selected {
+            background-color: #007BFF;
+            color: white;
+            border-radius: 50%;
+        }
+        .calendar .event-dot::after {
+            content: '';
+            display: block;
+            width: 6px;
+            height: 6px;
+            background-color: #ff6b6b;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .info-box {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            width: 300px;
+        }
+        .info-box h2, .info-box p {
+            margin: 10px 0;
+        }
+
+        /* 데스크탑 화면 스타일 */
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                align-items: center;
+            }
+            .info-box {
+                margin-bottom: 20px;
+            }
+        }
+
+        /* 모바일 화면 스타일 */
+        @media (max-width: 767px) {
+            .container {
+                flex-direction: column;
+            }
+            .calendar-container {
+                margin-bottom: 20px;
+            }
+            .info-box {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const schoolName = "세명컴퓨터고등학교"; // 사용자가 입력한 학교 이름
+            initialize(schoolName);
+        });
+
+        let selectedDate = new Date();
+        let schoolCode = '';
+        let schoolRegion = '';
+        let eventDays = [];
+
+        async function initialize(schoolName) {
+            await fetchSchoolInfo(schoolName);
+            await fetchMonthlySchedules(selectedDate);
+            generateCalendar();
+            updateInfo(selectedDate);
+        }
+
+        async function fetchSchoolInfo(schoolName) {
+    var schoolInfoURL = `https://open.neis.go.kr/hub/schoolInfo?SCHUL_NM=${encodeURIComponent(schoolName)}&Type=json`;
+
+    try {
+        let response = await fetch(schoolInfoURL);
+        let data = await response.json();
+
+        if (data.schoolInfo && data.schoolInfo.length > 1) {
+            let schoolInfo = data.schoolInfo[1].row[0];
+            schoolCode = schoolInfo.SD_SCHUL_CODE;
+            schoolRegion = schoolInfo.ATPT_OFCDC_SC_CODE;
+        } else {
+            alert("학교 정보를 가져올 수 없습니다.");
+            window.location.href = "login.html";
+        }
+    } catch (error) {
+        console.error('Error fetching school info:', error);
+        alert("학교 정보를 가져오는 중 오류가 발생했습니다.");
+        window.location.href = "login.html";
+    }
+}
+
+        async function fetchMonthlySchedules(date) {
+            eventDays = [];
+            let year = date.getFullYear();
+            let month = date.getMonth();
+
+            let firstDay = new Date(year, month, 1);
+            let lastDay = new Date(year, month + 1, 0);
+
+            let promises = [];
+
+            for (let day = firstDay; day <= lastDay; day.setDate(day.getDate() + 1)) {
+                let formattedDate = formatDate(day);
+                promises.push(fetchSchoolSchedule(formattedDate));
+            }
+
+            await Promise.all(promises);
+        }
+
+        function updateInfo(date) {
+            fetchMealInfo(date);
+            fetchSchoolSchedule(formatDate(date), true);
+            fetchClassTimetable(date, 3, 7);
+        }
+
+        async function fetchMealInfo(date) {
+            var formattedDate = formatDate(date);
+
+            var mealURL = `https://open.neis.go.kr/hub/mealServiceDietInfo?ATPT_OFCDC_SC_CODE=${schoolRegion}&SD_SCHUL_CODE=${schoolCode}&MLSV_YMD=${formattedDate}&Type=json`;
+
+            try {
+                let response = await fetch(mealURL);
+                let data = await response.json();
+                if (data.mealServiceDietInfo && data.mealServiceDietInfo.length > 1) {
+                    let mealInfo = data.mealServiceDietInfo[1].row[0];
+                    document.getElementById("mealInfo").innerText = mealInfo.DDISH_NM.replace(/<br\/>/g, '\n');
+                } else {
+                    document.getElementById("mealInfo").innerText = "오늘의 식단 정보가 없습니다.";
+                }
+            } catch (error) {
+                console.error('Error fetching meal info:', error);
+                document.getElementById("mealInfo").innerText = "식단 정보를 가져오는 중 오류가 발생했습니다.";
+            }
+        }
+
+        async function fetchSchoolSchedule(formattedDate, isSingleDay = false) {
+            var scheduleURL = `https://open.neis.go.kr/hub/SchoolSchedule?ATPT_OFCDC_SC_CODE=${schoolRegion}&SD_SCHUL_CODE=${schoolCode}&AA_YMD=${formattedDate}&Type=json`;
+
+            try {
+                let response = await fetch(scheduleURL);
+                let data = await response.json();
+                if (data.SchoolSchedule && data.SchoolSchedule.length > 1) {
+                    let scheduleInfo = data.SchoolSchedule[1].row.map(event => `<p>${formatDateReadable(event.AA_YMD)}: ${event.EVENT_NM}</p>`).join('');
+                    if (isSingleDay) {
+                        document.getElementById("scheduleInfo").innerHTML = scheduleInfo;
+                    }
+                    eventDays.push(formattedDate); // Add to eventDays if there is an event
+                } else if (isSingleDay) {
+                    document.getElementById("scheduleInfo").innerText = "오늘의 학사 일정이 없습니다.";
+                }
+            } catch (error) {
+                console.error('Error fetching school schedule:', error);
+                if (isSingleDay) {
+                    document.getElementById("scheduleInfo").innerText = "학사 일정을 가져오는 중 오류가 발생했습니다.";
+                }
+            }
+        }
+
+        async function fetchClassTimetable(date, grade, classNo) {
+    var yyyy = date.getFullYear();
+    var mm = String(date.getMonth() + 1).padStart(2, '0');
+    var dd = String(date.getDate()).padStart(2, '0');
+    var semester = mm <= 6 ? 1 : 2;
+
+    var timetableURL = `https://open.neis.go.kr/hub/hisTimetable?ATPT_OFCDC_SC_CODE=${schoolRegion}&SD_SCHUL_CODE=${schoolCode}&AY=${yyyy}&SEM=${semester}&GRADE=${grade}&CLASS_NM=${classNo}&ALL_TI_YMD=${yyyy}${mm}${dd}&Type=json`;
+
+    try {
+        let response = await fetch(timetableURL);
+        let data = await response.json();
+        if (data.hisTimetable && data.hisTimetable.length > 1) {
+            let timetable = data.hisTimetable[1].row.filter(period => {
+                if (new Date(`${yyyy}-${mm}-${dd}`).getDay() === 5) { // 금요일은 6교시까지만 표시
+                    return parseInt(period.PERIO) <= 6;
+                } else {
+                    return parseInt(period.PERIO) <= 7; // 나머지는 7교시까지 표시
+                }
+            });
+
+            // 1~5교시까지 공강인 경우를 채우기
+            for (let i = 1; i <= 5; i++) {
+                if (!timetable.some(period => parseInt(period.PERIO) === i)) {
+                    timetable.push({ PERIO: String(i), ITRT_CNTNT: '공강' });
+                }
+            }
+
+            timetable.sort((a, b) => parseInt(a.PERIO) - parseInt(b.PERIO));
+
+            // 화요일에만 7교시가 공강일 때 6교시 내용을 추가
+            if (new Date(`${yyyy}-${mm}-${dd}`).getDay() === 2 && !timetable.some(period => parseInt(period.PERIO) === 7)) {
+                let sixthPeriod = timetable.find(period => parseInt(period.PERIO) === 6);
+                if (sixthPeriod) {
+                    timetable.push({ PERIO: '7', ITRT_CNTNT: sixthPeriod.ITRT_CNTNT });
+                }
+            } else {
+                // 나머지 요일에 대해 비어있는 6, 7교시에 5교시 내용을 추가
+                let emptySlots = [6, 7].filter(slot => !timetable.some(period => parseInt(period.PERIO) === slot));
+                if (emptySlots.length > 0) {
+                    let fifthPeriod = timetable.find(period => parseInt(period.PERIO) === 5);
+                    if (fifthPeriod) {
+                        emptySlots.forEach(slot => {
+                            timetable.push({ PERIO: String(slot), ITRT_CNTNT: fifthPeriod.ITRT_CNTNT });
+                        });
+                    }
+                }
+            }
+
+            if (timetable.length === 0) {
+                document.getElementById("timetableInfo").innerText = "공강입니다.";
+            } else {
+                let timetableHTML = timetable.map(period => `<p>${period.PERIO}교시: ${period.ITRT_CNTNT}</p>`).join('');
+                document.getElementById("timetableInfo").innerHTML = timetableHTML;
+            }
+            
+        } else {
+            document.getElementById("timetableInfo").innerText = "시간표 정보가 없습니다.";
+        }
+    } catch (error) {
+        console.error('Error fetching timetable info:', error);
+        document.getElementById("timetableInfo").innerText = "시간표 정보를 가져오는 중 오류가 발생했습니다.";
+    }
+}
+
+
+
+
+
+
+
+
+        function formatDate(date) {
+            var yyyy = date.getFullYear();
+            var mm = String(date.getMonth() + 1).padStart(2, '0');
+            var dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}${mm}${dd}`;
+        }
+
+        function formatDateReadable(dateStr) {
+            var yyyy = dateStr.substring(0, 4);
+            var mm = dateStr.substring(4, 6);
+            var dd = dateStr.substring(6, 8);
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function changeMonth(delta) {
+            selectedDate.setMonth(selectedDate.getMonth() + delta);
+            fetchMonthlySchedules(selectedDate).then(() => {
+                generateCalendar();
+            });
+        }
+
+        function generateCalendar() {
+            let year = selectedDate.getFullYear();
+            let month = selectedDate.getMonth();
+            let firstDay = new Date(year, month, 1);
+            let lastDay = new Date(year, month + 1, 0);
+
+            let calendar = document.getElementById("calendar");
+            let calendarHeader = `
+                <div class="calendar-header">
+                    <button onclick="changeMonth(-1)">&#x276E;</button>
+                    ${year}. ${month + 1}
+                    <button onclick="changeMonth(1)">&#x276F;</button>
+                </div>
+            `;
+            let calendarBody = "<table><thead><tr><th>일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th></tr></thead><tbody>";
+
+            let currentDay = new Date(firstDay);
+            currentDay.setDate(currentDay.getDate() - currentDay.getDay());
+
+            while (currentDay <= lastDay || currentDay.getDay() !== 0) {
+                calendarBody += "<tr>";
+                for (let i = 0; i < 7; i++) {
+                    if (currentDay.getMonth() === month) {
+                        let dayClass = currentDay.toDateString() === selectedDate.toDateString() ? 'selected' : '';
+                        let formattedDate = formatDate(currentDay);
+                        let eventClass = eventDays.includes(formattedDate) ? 'event-dot' : '';
+
+                        calendarBody += `<td class="${dayClass} ${eventClass}" onclick="setDate(${year}, ${month}, ${currentDay.getDate()})">${currentDay.getDate()}</td>`;
+                    } else {
+                        calendarBody += "<td></td>";
+                    }
+                    currentDay.setDate(currentDay.getDate() + 1);
+                }
+                calendarBody += "</tr>";
+            }
+
+            calendarBody += "</tbody></table>";
+            calendar.innerHTML = calendarHeader + calendarBody;
+        }
+
+        function setDate(year, month, day) {
+            selectedDate = new Date(year, month, day);
+            generateCalendar();
+            updateInfo(selectedDate);
+        }
+    </script>
+</head>
+<body>
+    <nav>
+        <div id="logo_text"><a href="index.html"><img src="logoimg/Classmate-text-logo-black.png" alt="Logo"></a></div>
+        <div class="nav-links">
+            <a href="community.html">전체게시판</a>
+            <a href="school_community.html" id="schoolCommunityLink" style="display: none;">학교 커뮤니티</a>
+        </div>
+        <div id="loginLinks" class="user-menu">
+            <button id="profileButton"><i class="fa fa-user"></i> <span id="userNameNav">사용자</span> <i class="fa fa-caret-down"></i></button>
+            <div class="user-menu-content">
+                <a href="#" id="logoutLink">로그아웃</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div id="userInfo">
+        <div>
+            <p id="userName">ㅇㅇ</p>
+            <p id="userSchool">ㅇㅇ</p>
+            <p id="userGradeClassNumber">ㅇㅇ</p>
+        </div>
+        <div id="editButton">
+            
+            <span><i class="fa-solid fa-gear"></i>                                     나의 정보 관리</span>
+        </div>
+    </div>
+
+
+    <!-- Edit Modal -->
+    <div id="editModal">
+        <div id="editModalContent">
+            <span class="close">&times;</span>
+            <h3>정보 수정</h3>
+            <p>이름: <input type="text" id="editName"></p>
+            <p>학교: <input type="text" id="editSchool"></p>
+            <p>학년: <input type="number" id="editGrade"></p>
+            <p>반: <input type="number" id="editClass"></p>
+            <p>번호: <input type="number" id="editNumber"></p>
+            <button id="saveButton">저장</button>
+            <button id="cancelButton">취소</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="calendar-container">
+            <div class="calendar" id="calendar">
+                <!-- 달력은 JavaScript로 생성 -->
+            </div>
+        </div>
+        <div class="info-box">
+            <h2>학사 일정</h2>
+            <div id="scheduleInfo">Loading schedule info...</div>
+        </div>
+        <div class="info-box">
+            <h2>오늘의 식단</h2>
+            <div id="mealInfo">Loading meal info...</div>
+        </div>
+        <div class="info-box">
+            <h2>시간표</h2>
+            <div id="timetableInfo">Loading timetable info...</div>
+        </div>
+    </div>
+
+
+    
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsKxlkUfMQgYFZXUTxM43HQwuPEyguxFQ",
+            authDomain: "project1-bcc01.firebaseapp.com",
+            databaseURL: "https://project1-bcc01-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project1-bcc01",
+            storageBucket: "project1-bcc01.appspot.com",
+            messagingSenderId: "442551513572",
+            appId: "1:442551513572:web:06be5ea41831d13b8457f1",
+            measurementId: "G-WE9JCQDW74"
+        };
+    
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        var auth = firebase.auth();
+        var db = firebase.firestore();
+    
+        var currentUserDocRef;
+    
+        auth.onAuthStateChanged(async function(user) {
+    if (user) {
+        var uid = user.uid;
+        currentUserDocRef = db.collection("users").doc(uid);
+        try {
+            var docSnap = await currentUserDocRef.get();
+            if (docSnap.exists) {
+                var userData = docSnap.data();
+                // 사용자 정보를 가져와서 해당 정보를 기반으로 데이터 가져오기
+                document.getElementById("userName").innerText = "이름: " + userData.name;
+                document.getElementById("userSchool").innerText = "학교: " + userData.school;
+                document.getElementById("userGradeClassNumber").innerText = "학년/반/번호: " + userData.grade + "학년 " + userData.class + "반 " + userData.number + "번";
+                document.getElementById("schoolCommunityLink").innerText = userData.school + " 게시판";
+                document.getElementById("userNameNav").innerText = userData.name;
+                document.getElementById("schoolCommunityLink").style.display = "block";
+
+                // 사용자 정보를 기반으로 학사 일정, 급식표, 시간표 가져오기
+                await fetchSchoolInfo(userData.school);
+                await fetchMonthlySchedules(selectedDate);
+                fetchClassTimetable(selectedDate, userData.grade, userData.class);
+            }
+        } catch (error) {
+            console.error("Error getting user data: ", error);
+        }
+    } else {
+        window.location.href = "login.html";
+    }
+});
+
+    
+        // 로그아웃 기능
+        document.addEventListener('click', function(event) {
+            if (event.target && event.target.id === 'logoutLink') {
+                event.preventDefault();
+                auth.signOut().then(function() {
+                    window.location.href = "login.html";
+                }).catch(function(error) {
+                    console.error("Error signing out: ", error);
+                });
+            }
+        });
+    
+        // 프로필 수정 모달 열기
+        document.getElementById('editButton').onclick = function() {
+            document.getElementById('editModal').style.display = "block";
+            // 기존 정보로 입력 필드 채우기
+            currentUserDocRef.get().then((doc) => {
+                if (doc.exists) {
+                    var userData = doc.data();
+                    document.getElementById('editName').value = userData.name;
+                    document.getElementById('editSchool').value = userData.school;
+                    document.getElementById('editGrade').value = userData.grade;
+                    document.getElementById('editClass').value = userData.class;
+                    document.getElementById('editNumber').value = userData.number;
+                }
+            }).catch((error) => {
+                console.error("Error getting user data for edit: ", error);
+            });
+        };
+    
+        // 모달 닫기
+        document.getElementsByClassName("close")[0].onclick = function() {
+            document.getElementById('editModal').style.display = "none";
+        };
+    
+        document.getElementById('cancelButton').onclick = function() {
+            document.getElementById('editModal').style.display = "none";
+        };
+    
+        // 프로필 수정 저장
+document.getElementById('saveButton').onclick = async function() {
+    var newName = document.getElementById('editName').value;
+    var newSchool = document.getElementById('editSchool').value;
+    var newGrade = document.getElementById('editGrade').value;
+    var newClass = document.getElementById('editClass').value;
+    var newNumber = document.getElementById('editNumber').value;
+
+    try {
+        await currentUserDocRef.update({
+            name: newName,
+            school: newSchool,
+            grade: newGrade,
+            class: newClass,
+            number: newNumber
+        });
+        document.getElementById('userName').innerText = "이름: " + newName;
+        document.getElementById('userSchool').innerText = "학교: " + newSchool;
+        document.getElementById('userGradeClassNumber').innerText = "학년/반/번호: " + newGrade + "학년 " + newClass + "반 " + newNumber + "번";
+        document.getElementById('schoolCommunityLink').innerText = newSchool + " 게시판";
+        document.getElementById('editModal').style.display = "none";
+        document.getElementById("schoolCommunityLink").style.display = "block";
+
+        // 프로필 수정 후 페이지 새로고침
+        location.reload();
+    } catch (error) {
+        console.error("Error updating profile: ", error);
+    }
+};
+
+    </script>
+    
+</body>
+</html>

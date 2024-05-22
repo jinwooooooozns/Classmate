@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>게시물 상세보기</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" href="logoimg/logo-black.png"/>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f1f1;
+        }
+        #userInfo {
+            padding: 10px;
+            color: #fff;
+        }
+        #userInfo a {
+            color: #fff;
+            text-decoration: none;
+        }
+        h2 {
+            text-align: center;
+        }
+        #postDetail {
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        .comment-section {
+            margin-top: 20px;
+        }
+        .comment {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .like-button {
+            color: blue;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        nav {
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+        }
+        #logo_text {
+            display: flex;
+            align-items: center;
+        }
+        nav img {
+            width: 150px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            margin-left: 20px; /* Adjust this as needed for spacing */
+        }
+        nav a {
+            color: #333;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        .user-menu {
+            position: relative;
+            display: inline-block;
+        }
+        .user-menu button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        .user-menu button i {
+            margin-left: 5px;
+        }
+        .user-menu-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .user-menu-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .user-menu-content a:hover {
+            background-color: #ddd;
+        }
+        .user-menu:hover .user-menu-content {
+            display: block;
+        }
+        #userInfo{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div id="logo_text"><a href="index.html"><img src="logoimg/Classmate-text-logo-black.png" alt="Logo"></a></div>
+        <div class="nav-links">
+            <a href="community.html">전체게시판</a>
+            <a href="school_community.html" id="schoolCommunityLink">세명컴퓨터고등학교 게시판</a>
+        </div>
+        <div id="loginLinks" class="user-menu">
+            <button id="profileButton"><i class="fa fa-user"></i> <span id="userNameNav">사용자</span> <i class="fa fa-caret-down"></i></button>
+            <div class="user-menu-content">
+                <a href="#" id="logoutLink">로그아웃</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div id="userInfo">
+        <p id="userName"></p>
+        <p id="logout" style="display: none;"><a href="#">로그아웃</a></p>
+    </div>
+
+    <div id="postDetail">로딩 중...</div>
+
+    <div class="comment-section">
+        <h3>댓글</h3>
+        <div id="commentsList">로딩 중...</div>
+        <div id="newCommentSection" style="display: none;">
+            <textarea id="newComment" placeholder="댓글을 입력하세요"></textarea>
+            <button id="saveCommentButton">댓글 작성</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+        import { getFirestore, doc, getDoc, collection, addDoc, query, getDocs, updateDoc, deleteDoc, setDoc, Timestamp, orderBy, increment, writeBatch } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+    
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsKxlkUfMQgYFZXUTxM43HQwuPEyguxFQ",
+            authDomain: "project1-bcc01.firebaseapp.com",
+            databaseURL: "https://project1-bcc01-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project1-bcc01",
+            storageBucket: "project1-bcc01.appspot.com",
+            messagingSenderId: "442551513572",
+            appId: "1:442551513572:web:06be5ea41831d13b8457f1",
+            measurementId: "G-WE9JCQDW74"
+        };
+    
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+    
+        let currentUser = null;
+    
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                const uid = user.uid;
+                const userDocRef = doc(db, "users", uid);
+                try {
+                    const docSnap = await getDoc(userDocRef);
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        document.getElementById("userName").innerText = userData.name;
+                        document.getElementById("userNameNav").innerText = userData.name;
+                        document.getElementById("logout").style.display = "block";
+                        document.getElementById("newCommentSection").style.display = "block";
+                        loadPostDetails();
+                    } else {
+                        console.log("User information not found.");
+                    }
+                } catch (error) {
+                    console.log("Error getting document:", error);
+                }
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+    
+        document.getElementById('logoutLink').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "login.html";
+            }).catch((error) => {
+                console.error('Sign out error', error);
+            });
+        });
+    
+        async function loadPostDetails() {
+            const postId = new URLSearchParams(window.location.search).get('postId');
+            const schoolName = new URLSearchParams(window.location.search).get('schoolName');
+            const postRef = doc(db, 'school_communities', schoolName, 'posts', postId);
+    
+            try {
+                const docSnap = await getDoc(postRef);
+                if (docSnap.exists()) {
+                    const postData = docSnap.data();
+                    const createdAt = postData.timestamp ? postData.timestamp.toDate().toLocaleString() : 'N/A';
+                    document.getElementById('postDetail').innerHTML = `
+                        <h2>${postData.title}</h2>
+                        <p>${postData.content}</p>
+                        <p>작성자: ${postData.authorName || '익명'}</p>
+                        <p>작성일: ${createdAt}</p>
+                        <p>좋아요: <span id="likeCount">${postData.likes}</span> <i class="fa fa-thumbs-up like-button" id="likeButton"></i></p>
+                        ${currentUser.uid === postData.authorId ? `<button id="editPostButton">수정</button><button id="deletePostButton">삭제</button>` : ''}
+                    `;
+                    document.getElementById('likeButton').addEventListener('click', async () => {
+                        const userLikedRef = doc(db, 'school_communities', schoolName, 'posts', postId, 'likes', currentUser.uid);
+                        const userLikedSnap = await getDoc(userLikedRef);
+                        const batch = writeBatch(db);
+                        if (!userLikedSnap.exists()) {
+                            batch.set(userLikedRef, { liked: true });
+                            batch.update(postRef, { likes: increment(1) });
+                            document.getElementById('likeCount').innerText = parseInt(document.getElementById('likeCount').innerText) + 1;
+                        } else {
+                            batch.delete(userLikedRef);
+                            batch.update(postRef, { likes: increment(-1) });
+                            document.getElementById('likeCount').innerText = parseInt(document.getElementById('likeCount').innerText) - 1;
+                        }
+                        await batch.commit();
+                    });
+                    if (currentUser.uid === postData.authorId) {
+                        document.getElementById('editPostButton').addEventListener('click', () => {
+                            editPost(postId, postData.title, postData.content, schoolName);
+                        });
+                        document.getElementById('deletePostButton').addEventListener('click', async () => {
+                            if (confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
+                                await deleteDoc(postRef);
+                                window.location.href = 'community.html';
+                            }
+                        });
+                    }
+                    loadComments(postId, schoolName);
+                } else {
+                    document.getElementById('postDetail').innerText = '해당 게시물을 찾을 수 없습니다.';
+                }
+            } catch (error) {
+                console.error('Error getting document:', error);
+            }
+        }
+    
+        function editPost(postId, currentTitle, currentContent, schoolName) {
+            const postDetailDiv = document.getElementById('postDetail');
+            postDetailDiv.innerHTML = `
+                <h2>게시물 수정</h2>
+                <input type="text" id="editTitle" value="${currentTitle}">
+                <textarea id="editContent">${currentContent}</textarea>
+                <button id="saveEditButton">저장</button>
+                <button id="cancelEditButton">취소</button>
+            `;
+            document.getElementById('saveEditButton').addEventListener('click', async () => {
+                const newTitle = document.getElementById('editTitle').value;
+                const newContent = document.getElementById('editContent').value;
+                const postRef = doc(db, 'school_communities', schoolName, 'posts', postId);
+                await setDoc(postRef, { title: newTitle, content: newContent }, { merge: true });
+                loadPostDetails();
+            });
+            document.getElementById('cancelEditButton').addEventListener('click', () => {
+                loadPostDetails();
+            });
+        }
+    
+        async function loadComments(postId, schoolName) {
+            const commentsRef = collection(db, 'school_communities', schoolName, 'posts', postId, 'comments');
+            const commentsQuery = query(commentsRef, orderBy('createdAt', 'asc'));
+    
+            try {
+                const querySnapshot = await getDocs(commentsQuery);
+                const commentsList = document.getElementById('commentsList');
+                commentsList.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const commentData = doc.data();
+                    const createdAt = commentData.createdAt ? commentData.createdAt.toDate().toLocaleString() : 'N/A';
+                    const commentElement = document.createElement('div');
+                    commentElement.classList.add('comment');
+                    commentElement.dataset.id = doc.id;
+                    commentElement.innerHTML = `
+                        <p>${commentData.content}</p>
+                        <p>작성자: ${commentData.userName || '익명'}</p>
+                        <p>작성일: ${createdAt}</p>
+                        <p>좋아요: <span id="commentLikeCount-${doc.id}">${commentData.likes || 0}</span> <i class="fa fa-thumbs-up comment-like-button" data-id="${doc.id}"></i></p>
+                        ${currentUser.uid === commentData.userId ? `<button class="editCommentButton" data-id="${doc.id}">수정</button><button class="deleteCommentButton" data-id="${doc.id}">삭제</button>` : ''}
+                    `;
+                    commentsList.appendChild(commentElement);
+                });
+
+                document.querySelectorAll('.comment-like-button').forEach(button => {
+                    button.addEventListener('click', async () => {
+                        const commentId = button.getAttribute('data-id');
+                        const commentRef = doc(db, 'school_communities', schoolName, 'posts', postId, 'comments', commentId);
+                        const userLikedRef = doc(db, 'school_communities', schoolName, 'posts', postId, 'comments', commentId, 'likes', currentUser.uid);
+                        const userLikedSnap = await getDoc(userLikedRef);
+                        const batch = writeBatch(db);
+                        if (!userLikedSnap.exists()) {
+                            batch.set(userLikedRef, { liked: true });
+                            batch.update(commentRef, { likes: increment(1) });
+                            document.getElementById(`commentLikeCount-${commentId}`).innerText = parseInt(document.getElementById(`commentLikeCount-${commentId}`).innerText) + 1;
+                        } else {
+                            batch.delete(userLikedRef);
+                            batch.update(commentRef, { likes: increment(-1) });
+                            document.getElementById(`commentLikeCount-${commentId}`).innerText = parseInt(document.getElementById(`commentLikeCount-${commentId}`).innerText) - 1;
+                        }
+                        await batch.commit();
+                    });
+                });
+
+                document.querySelectorAll('.editCommentButton').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const commentId = button.getAttribute('data-id');
+                        const commentElement = button.closest('.comment');
+                        editComment(postId, commentId, commentElement, schoolName);
+                    });
+                });
+
+                document.querySelectorAll('.deleteCommentButton').forEach(button => {
+                    button.addEventListener('click', async () => {
+                        const commentId = button.getAttribute('data-id');
+                        const commentRef = doc(db, 'school_communities', schoolName, 'posts', postId, 'comments', commentId);
+                        if (confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+                            await deleteDoc(commentRef);
+                            loadComments(postId, schoolName);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error getting comments:', error);
+            }
+        }
+    
+        function editComment(postId, commentId, commentElement, schoolName) {
+            const currentContent = commentElement.querySelector('p:first-of-type').innerText;
+            commentElement.innerHTML = `
+                <textarea class="editCommentContent">${currentContent}</textarea>
+                <button class="saveEditCommentButton" data-id="${commentId}">저장</button>
+                <button class="cancelEditCommentButton" data-id="${commentId}">취소</button>
+            `;
+            document.querySelector(`.saveEditCommentButton[data-id="${commentId}"]`).addEventListener('click', async () => {
+                const newContent = document.querySelector(`.editCommentContent[data-id="${commentId}"]`).value;
+                const commentRef = doc(db, 'school_communities', schoolName, 'posts', postId, 'comments', commentId);
+                await setDoc(commentRef, { content: newContent }, { merge: true });
+                loadComments(postId, schoolName);
+            });
+            document.querySelector(`.cancelEditCommentButton[data-id="${commentId}"]`).addEventListener('click', () => {
+                loadComments(postId, schoolName);
+            });
+        }
+    
+        document.getElementById('saveCommentButton').addEventListener('click', async () => {
+            const postId = new URLSearchParams(window.location.search).get('postId');
+            const schoolName = new URLSearchParams(window.location.search).get('schoolName');
+            const commentContent = document.getElementById('newComment').value;
+    
+            if (!commentContent) {
+                alert('댓글을 입력하세요.');
+                return;
+            }
+    
+            try {
+                const newComment = {
+                    content: commentContent,
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || '익명',
+                    createdAt: Timestamp.now(),
+                    likes: 0
+                };
+                await addDoc(collection(db, 'school_communities', schoolName, 'posts', postId, 'comments'), newComment);
+                document.getElementById('newComment').value = '';
+                loadComments(postId, schoolName);
+            } catch (error) {
+                console.error('Error adding comment:', error);
+            }
+        });
+    </script>
+</body>
+</html>

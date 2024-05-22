@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="logoimg/logo-black.png"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 및 회원가입</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+     
+                font-family: "Jua", sans-serif;
+                font-weight: 400;
+                font-style: normal;
+                
+        }
+        body{
+            background-color: #e9e8e4;
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            text-align: center;
+            transform: translate(-50%, -50%);
+            background-image: url(logoimg/a-modern-and-youthful-logo-for-a-high-school-commu-VfS-HMzMRkeGkv-5E1snuQ-j7BqbbixQGqppNp5Yh3Acw.jpeg);
+            background-size: 350px;
+            background-repeat: no-repeat;
+            background-position: left 50% top -20% ; 
+        }   
+        .hidden {
+            display: none;
+        }
+        .message {
+            margin-top: 10px;
+            font-size: 14px;
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        div{
+            font-size: 30px;
+            padding: 3px;
+            margin: 3px;
+            margin-bottom: 12px;
+        }
+        h1{
+            font-size: 50px;
+        }
+        button{
+            padding: 5px 5px;
+            font-size: 20px;
+            background-color: #fff;
+            border-color: black;
+            border-radius: 8px;
+            box-shadow: 0px 0px 1px 1px rgb(0,0,0);
+            border-width: thin;
+        }
+        input{
+            
+            width:230px;
+            height:23px;
+            font-size:20px;
+        }
+
+    </style>
+</head>
+<body>
+    <div>
+    <form id="signUpForm" class="hidden">
+        <div>ID : <input type="email" id="signUpEmail" required /></div>
+        <div>PW : <input type="password" id="signUpPassword" required /></div>
+        <div>학교 : <input type="text" id="school" required /></div>
+        <div>학년 : <input type="number" id="grade" required /></div>
+        <div>반 : <input type="number" id="class" required /></div>
+        <div>번호 : <input type="number" id="number" required /></div>
+        <div>이름 : <input type="text" id="name" required /></div>
+        <button type="submit" id="signUpButton">회원가입 하기</button>
+        <button type="button" id="goToLoginButton">로그인하러 가기</button>
+        <div id="signUpMessage" class="message"></div>
+    </form>
+
+    <form id="signInForm">
+        <div>ID : <input type="email" id="signInEmail" required /></div>
+        <div>PW : <input type="password" id="signInPassword" required /></div>
+        <button type="submit" id="signInButton">로그인 하기</button>
+        <button type="button" id="goToSignUpButton">회원가입 하러 가기</button>
+        <div id="signInMessage" class="message"></div>
+    </form>
+</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsKxlkUfMQgYFZXUTxM43HQwuPEyguxFQ",
+            authDomain: "project1-bcc01.firebaseapp.com",
+            databaseURL: "https://project1-bcc01-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project1-bcc01",
+            storageBucket: "project1-bcc01.appspot.com",
+            messagingSenderId: "442551513572",
+            appId: "1:442551513572:web:06be5ea41831d13b8457f1",
+            measurementId: "G-WE9JCQDW74"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth();
+        const db = getFirestore(app);
+
+        document.getElementById('goToSignUpButton').addEventListener('click', () => {
+            document.getElementById('signInForm').classList.add('hidden');
+            document.getElementById('signUpForm').classList.remove('hidden');
+        });
+
+        document.getElementById('goToLoginButton').addEventListener('click', () => {
+            document.getElementById('signUpForm').classList.add('hidden');
+            document.getElementById('signInForm').classList.remove('hidden');
+        });
+
+        document.getElementById('signUpButton').addEventListener('click', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('signUpEmail').value;
+            const password = document.getElementById('signUpPassword').value;
+            const school = document.getElementById('school').value;
+            const grade = document.getElementById('grade').value;
+            const classNum = document.getElementById('class').value;
+            const number = document.getElementById('number').value;
+            const name = document.getElementById('name').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, "users", user.uid), {
+                    email,
+                    school,
+                    grade,
+                    class: classNum,
+                    number,
+                    name
+                });
+                window.confirm('회원가입 성공!');
+                document.getElementById('signUpForm').reset();
+            } catch (error) {
+                console.log('error', error);
+                if (error.code === 'auth/email-already-in-use') {
+                    window.confirm('해당 이메일은 이미 사용 중입니다. 로그인 페이지로 이동합니다.');
+                    document.getElementById('signUpForm').classList.add('hidden');
+                    document.getElementById('signInForm').classList.remove('hidden');
+                } else {
+                    window.confirm(`회원가입 실패: ${error.message}`);
+                }
+            }
+        });
+
+        document.getElementById('signInButton').addEventListener('click', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('signInEmail').value;
+            const password = document.getElementById('signInPassword').value;
+
+            try {
+                if (!email || !password) {
+                    throw new Error("Email and Password are required.");
+                }
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                window.confirm('로그인 성공!');
+                document.getElementById('signInForm').reset();
+                window.location.href = "index.html";
+            } catch (error) {
+                console.log('error', error);
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    window.confirm('로그인 실패: 이메일 또는 비밀번호가 잘못되었습니다.');
+                } else {
+                    window.confirm(`로그인 실패: ${error.message}`);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
